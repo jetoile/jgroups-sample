@@ -39,60 +39,60 @@ import org.slf4j.LoggerFactory;
  */
 public class JGroupsClient extends ReceiverAdapter {
 
-	final static private Logger LOGGER = LoggerFactory.getLogger(JGroupsClient.class);
+    final static private Logger LOGGER = LoggerFactory.getLogger(JGroupsClient.class);
 
-	final private Data data = new Data();
-	private RpcDispatcher rpcDispatcher;
-	private Channel publicChannel;
-	private Channel privateChannel;
+    final private Data data = new Data();
+    private RpcDispatcher rpcDispatcher;
+    private Channel publicChannel;
+    private Channel privateChannel;
 
-	public JGroupsClient(final String data) {
-		this.data.setData(data);
-	}
+    public JGroupsClient(final String data) {
+        this.data.setData(data);
+    }
 
-	public void stop() throws IOException {
-		this.privateChannel.close();
-		this.publicChannel.close();
-	}
+    public void stop() throws IOException {
+        this.privateChannel.close();
+        this.publicChannel.close();
+    }
 
-	public void start() throws ChannelException {
-		this.privateChannel = new JChannel("default-udp.xml");
+    public void start() throws ChannelException {
+        this.privateChannel = new JChannel("default-udp.xml");
 
-		final ChangeInfraListener changeSetListener = new ChangeInfraListener(privateChannel);
-		rpcDispatcher = new RpcDispatcher(this.privateChannel, null, changeSetListener, this);
-		changeSetListener.setRpcDispatcher(rpcDispatcher);
-		this.privateChannel.connect("privateJMXChannel");
-		this.data.setAddress(this.privateChannel.getAddress());
+        final ChangeInfraListener changeSetListener = new ChangeInfraListener(privateChannel);
+        rpcDispatcher = new RpcDispatcher(this.privateChannel, null, changeSetListener, this);
+        changeSetListener.setRpcDispatcher(rpcDispatcher);
+        this.privateChannel.connect("privateChannel");
+        this.data.setAddress(this.privateChannel.getAddress());
 
-		this.publicChannel = new JChannel("default-udp.xml");
-		if (!this.publicChannel.isConnected()) {
-			this.publicChannel.setReceiver(this);
-			this.publicChannel.connect("publicJMXChannel");
-		}
-	}
+        this.publicChannel = new JChannel("default-udp.xml");
+        if (!this.publicChannel.isConnected()) {
+            this.publicChannel.setReceiver(this);
+            this.publicChannel.connect("publicChannel");
+        }
+    }
 
-	public Data getData() {
-		return this.data;
-	}
+    public Data getData() {
+        return this.data;
+    }
 
-	// @Override
-	// public byte[] getState() {
-	// try {
-	// return Util.objectToByteBuffer(this.connector);
-	// } catch (Exception e) {
-	// LOGGER.error("getState error", e);
-	// }
-	// return null;
-	// }
-	//
-	// @Override
-	// public void setState(byte[] state) {
-	// try {
-	// Connector connector = (Connector)Util.objectFromByteBuffer(state);
-	// connectorsStub.put(connector.getPrivateAddress(),
-	// connector.getConnector());
-	// } catch (Exception e) {
-	// LOGGER.error("setState error", e);
-	// }
-	// }
+    // @Override
+    // public byte[] getState() {
+    // try {
+    // return Util.objectToByteBuffer(this.connector);
+    // } catch (Exception e) {
+    // LOGGER.error("getState error", e);
+    // }
+    // return null;
+    // }
+    //
+    // @Override
+    // public void setState(byte[] state) {
+    // try {
+    // Connector connector = (Connector)Util.objectFromByteBuffer(state);
+    // connectorsStub.put(connector.getPrivateAddress(),
+    // connector.getConnector());
+    // } catch (Exception e) {
+    // LOGGER.error("setState error", e);
+    // }
+    // }
 }

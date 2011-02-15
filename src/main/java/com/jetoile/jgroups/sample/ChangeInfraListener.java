@@ -47,90 +47,90 @@ import org.slf4j.LoggerFactory;
  */
 public class ChangeInfraListener implements MembershipListener {
 
-	final static private Logger LOGGER = LoggerFactory.getLogger(ChangeInfraListener.class);
+    final static private Logger LOGGER = LoggerFactory.getLogger(ChangeInfraListener.class);
 
-	final private Map<Address, String> dataCache = Collections.synchronizedMap(new HashMap<Address, String>());
+    final private Map<Address, String> dataCache = Collections.synchronizedMap(new HashMap<Address, String>());
 
-	final private Channel privateChannel;
+    final private Channel privateChannel;
 
-	private RpcDispatcher rpcDispatcher;
+    private RpcDispatcher rpcDispatcher;
 
-	public ChangeInfraListener(final Channel privateChannel) {
-		this.privateChannel = privateChannel;
-	}
+    public ChangeInfraListener(final Channel privateChannel) {
+        this.privateChannel = privateChannel;
+    }
 
-	public void setRpcDispatcher(RpcDispatcher rpcDispatcher) {
-		this.rpcDispatcher = rpcDispatcher;
-	}
+    public void setRpcDispatcher(RpcDispatcher rpcDispatcher) {
+        this.rpcDispatcher = rpcDispatcher;
+    }
 
-	@Override
-	synchronized public void viewAccepted(View new_view) {
-		// when a new member is up
-		List<Address> newAddresses = getNewAddresses(new_view.getMembers());
+    @Override
+    synchronized public void viewAccepted(View new_view) {
+        // when a new member is up
+        List<Address> newAddresses = getNewAddresses(new_view.getMembers());
 
-		newAddresses.remove(privateChannel.getAddress());
+        newAddresses.remove(privateChannel.getAddress());
 
-		List<Address> ads = new ArrayList<Address>();
-		for (Address ad : newAddresses) {
-			if (!dataCache.containsKey(ad)) {
-				ads.add(ad);
-			}
-		}
+        List<Address> ads = new ArrayList<Address>();
+        for (Address ad : newAddresses) {
+            if (!dataCache.containsKey(ad)) {
+                ads.add(ad);
+            }
+        }
 
-		if (!ads.isEmpty()) {
-			MethodCall methodCall = new MethodCall("getData", new Object[] {}, new Class[] {});
-			LOGGER.debug("invoke remote getStubConnector on: {}", ads);
+        if (!ads.isEmpty()) {
+            MethodCall methodCall = new MethodCall("getData", new Object[] {}, new Class[] {});
+            LOGGER.debug("invoke remote getData on: {}", ads);
 
-			RspList resps = rpcDispatcher.callRemoteMethods(ads, methodCall, RequestOptions.SYNC);
-			LOGGER.debug("after invoke getData - nb result {}", resps.numReceived());
+            RspList resps = rpcDispatcher.callRemoteMethods(ads, methodCall, RequestOptions.SYNC);
+            LOGGER.debug("after invoke getData - nb result {}", resps.numReceived());
 
-			if (resps.numReceived() == 0) {
-				LOGGER.debug("retry...");
-				resps = rpcDispatcher.callRemoteMethods(ads, methodCall, RequestOptions.SYNC);
-			}
+            if (resps.numReceived() == 0) {
+                LOGGER.debug("retry...");
+                resps = rpcDispatcher.callRemoteMethods(ads, methodCall, RequestOptions.SYNC);
+            }
 
-			for (Object resp : resps.getResults()) {
-				Data data = (Data) resp;
-				LOGGER.debug("new jmxConnector: {}", data);
-				dataCache.put(data.getAddress(), data.getData());
-			}
-		}
+            for (Object resp : resps.getResults()) {
+                Data data = (Data) resp;
+                LOGGER.debug("new data: {}", data);
+                dataCache.put(data.getAddress(), data.getData());
+            }
+        }
 
-		List<Address> olds = getObsoleteAddresses(new_view.getMembers());
-		for (Address old : olds) {
-			LOGGER.debug("remove jmxConnector: {}", old);
-			dataCache.remove(old);
-		}
-	}
+        List<Address> olds = getObsoleteAddresses(new_view.getMembers());
+        for (Address old : olds) {
+            LOGGER.debug("remove data: {}", old);
+            dataCache.remove(old);
+        }
+    }
 
-	@Override
-	public void suspect(Address suspected_mbr) {
-		// NOTHING TO DO
-	}
+    @Override
+    public void suspect(Address suspected_mbr) {
+        // NOTHING TO DO
+    }
 
-	@Override
-	public void block() {
-		// NOTHING TO DO
-	}
+    @Override
+    public void block() {
+        // NOTHING TO DO
+    }
 
-	List<Address> getNewAddresses(Vector<Address> newMembers) {
-		List<Address> result = new ArrayList<Address>();
-		for (Address address : newMembers) {
-			if (!this.dataCache.containsKey(address)) {
-				result.add(address);
-			}
-		}
-		return result;
-	}
+    List<Address> getNewAddresses(Vector<Address> newMembers) {
+        List<Address> result = new ArrayList<Address>();
+        for (Address address : newMembers) {
+            if (!this.dataCache.containsKey(address)) {
+                result.add(address);
+            }
+        }
+        return result;
+    }
 
-	List<Address> getObsoleteAddresses(Vector<Address> newMembers) {
-		List<Address> result = new ArrayList<Address>();
-		for (Address address : this.dataCache.keySet()) {
-			if (!newMembers.contains(address)) {
-				result.add(address);
-			}
-		}
-		return result;
-	}
+    List<Address> getObsoleteAddresses(Vector<Address> newMembers) {
+        List<Address> result = new ArrayList<Address>();
+        for (Address address : this.dataCache.keySet()) {
+            if (!newMembers.contains(address)) {
+                result.add(address);
+            }
+        }
+        return result;
+    }
 
 }
