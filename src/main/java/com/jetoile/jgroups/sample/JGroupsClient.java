@@ -43,32 +43,24 @@ public class JGroupsClient extends ReceiverAdapter {
 
     final private Data data = new Data();
     private RpcDispatcher rpcDispatcher;
-    private Channel publicChannel;
-    private Channel privateChannel;
+    private Channel channel;
 
     public JGroupsClient(final String data) {
         this.data.setData(data);
     }
 
     public void stop() throws IOException {
-        this.privateChannel.close();
-        this.publicChannel.close();
+        this.channel.close();
     }
 
     public void start() throws ChannelException {
-        this.privateChannel = new JChannel("default-udp.xml");
+        this.channel = new JChannel("default-udp.xml");
 
-        final ChangeInfraListener changeSetListener = new ChangeInfraListener(privateChannel);
-        rpcDispatcher = new RpcDispatcher(this.privateChannel, null, changeSetListener, this);
+        final ChangeInfraListener changeSetListener = new ChangeInfraListener(channel);
+        rpcDispatcher = new RpcDispatcher(this.channel, null, changeSetListener, this);
         changeSetListener.setRpcDispatcher(rpcDispatcher);
-        this.privateChannel.connect("privateChannel");
-        this.data.setAddress(this.privateChannel.getAddress());
-
-        this.publicChannel = new JChannel("default-udp.xml");
-        if (!this.publicChannel.isConnected()) {
-            this.publicChannel.setReceiver(this);
-            this.publicChannel.connect("publicChannel");
-        }
+        this.channel.connect("privateChannel");
+        this.data.setAddress(this.channel.getAddress());
     }
 
     public Data getData() {
